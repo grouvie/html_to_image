@@ -1,0 +1,21 @@
+[package]
+name = "html_to_image"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyrender = { workspace = true }
+anyrender_vello_cpu = { workspace = true }
+blitz = { workspace = true }
+image = { workspace = true }
+linebender_resource_handle = { workspace = true }
+minijinja = { workspace = true }
+parley = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true
