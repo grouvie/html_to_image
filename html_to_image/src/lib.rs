@@ -8,6 +8,7 @@ use std::{
 use anyrender::ImageRenderer;
 use anyrender_vello_cpu::VelloCpuImageRenderer;
 use blitz::{dom::DocumentConfig, html::HtmlDocument, paint};
+use image::{ImageEncoder, codecs::png::PngEncoder};
 use linebender_resource_handle::Blob;
 use parley::FontContext;
 use serde::Serialize;
@@ -96,6 +97,67 @@ pub fn render_html_to_png(
     current_time_for_animations: f64,
     font_paths: &[PathBuf],
 ) -> Result<()> {
+    let rgba = render_html_to_rgba(
+        html,
+        width,
+        height,
+        scale,
+        current_time_for_animations,
+        font_paths,
+    )?;
+
+    if let Some(parent) = out_path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        fs::create_dir_all(parent).map_err(|source| RenderError::CreateOutputDir {
+            source,
+            path: parent.to_path_buf(),
+        })?;
+    }
+
+    image::save_buffer(out_path, &rgba, width, height, image::ColorType::Rgba8).map_err(
+        |source| RenderError::WritePng {
+            source,
+            path: out_path.to_path_buf(),
+        },
+    )?;
+
+    Ok(())
+}
+
+/// Render raw HTML to PNG bytes (in-memory).
+///
+/// This avoids filesystem I/O and is useful for HTTP responses.
+///
+/// # Errors
+/// Returns an error if fonts cannot be loaded or the PNG encoding fails.
+pub fn render_html_to_png_bytes(
+    html: &str,
+    width: u32,
+    height: u32,
+    scale: f64,
+    current_time_for_animations: f64,
+    font_paths: &[PathBuf],
+) -> Result<Vec<u8>> {
+    let rgba = render_html_to_rgba(
+        html,
+        width,
+        height,
+        scale,
+        current_time_for_animations,
+        font_paths,
+    )?;
+    encode_png(&rgba, width, height)
+}
+
+fn render_html_to_rgba(
+    html: &str,
+    width: u32,
+    height: u32,
+    scale: f64,
+    current_time_for_animations: f64,
+    font_paths: &[PathBuf],
+) -> Result<Vec<u8>> {
     let mut font_ctx = FontContext::new();
     register_fonts(&mut font_ctx, font_paths)?;
 
@@ -118,23 +180,19 @@ pub fn render_html_to_png(
         &mut rgba,
     );
 
-    if let Some(parent) = out_path.parent()
-        && !parent.as_os_str().is_empty()
-    {
-        fs::create_dir_all(parent).map_err(|source| RenderError::CreateOutputDir {
+    Ok(rgba)
+}
+
+fn encode_png(rgba: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
+    let mut buffer = Vec::new();
+    let encoder = PngEncoder::new(&mut buffer);
+    encoder
+        .write_image(rgba, width, height, image::ExtendedColorType::Rgba8)
+        .map_err(|source| RenderError::WritePng {
             source,
-            path: parent.to_path_buf(),
+            path: PathBuf::from("in-memory"),
         })?;
-    }
-
-    image::save_buffer(out_path, &rgba, width, height, image::ColorType::Rgba8).map_err(
-        |source| RenderError::WritePng {
-            source,
-            path: out_path.to_path_buf(),
-        },
-    )?;
-
-    Ok(())
+    Ok(buffer)
 }
 
 /// Render any `MiniJinja` template with arbitrary serializable data.
@@ -256,6 +314,18 @@ mod tests {
         render_html_to_png(html, &out, 64, 48, 1.0, DEFAULT_ANIMATION_TIME, &[])?;
 
         let bytes = fs::read(&out)?;
+        if !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+            return Err("output is not a PNG".into());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn render_html_to_png_bytes_returns_png() -> TestResult {
+        let html = "<html><body><div>Hello bytes</div></body></html>";
+
+        let bytes = render_html_to_png_bytes(html, 64, 48, 1.0, DEFAULT_ANIMATION_TIME, &[])?;
+
         if !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
             return Err("output is not a PNG".into());
         }
