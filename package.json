@@ -1,0 +1,24 @@
+{
+  "name": "@grouvie/html-to-image",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "index.node",
+    "templates/",
+    "assets/"
+  ],
+  "devDependencies": {
+    "@napi-rs/cli": "^3.5.0"
+  },
+  "scripts": {
+    "build": "napi build --release -p html_to_image_node -o . --dts index.d.ts",
+    "prepare": "npm run build"
+  },
+  "napi": {
+    "binaryName": "index"
+  }
+}

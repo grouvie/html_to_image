@@ -1,0 +1,17 @@
+{
+  "name": "html-to-image-example-ts-local",
+  "private": true,
+  "version": "0.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@grouvie/html-to-image": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

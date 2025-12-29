@@ -1,0 +1,21 @@
+[package]
+name = "html_to_image_node"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+html_to_image = { path = "../html_to_image" }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
+napi = { version = "3", features = ["serde-json", "tokio_rt"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"
+
+[lints]
+workspace = true

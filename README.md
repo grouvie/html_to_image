@@ -1,12 +1,13 @@
 # html_to_image
 
-Render MiniJinja HTML to PNG using Blitz + Vello (CPU-only). This workspace ships a reusable library, a CLI, and a Poem-based HTTP server.
+Render MiniJinja HTML to PNG using Blitz + Vello (CPU-only). This workspace ships a reusable library, a CLI, a Poem-based HTTP server, and a Node.js N-API addon (via the `@grouvie/html-to-image` npm package).
 
 ## Crates
 
 - `html_to_image/`: library with rendering functions and defaults.
 - `html_to_image_cli/`: CLI wrapper (`html-to-image`) – see `html_to_image_cli/README.md`.
 - `html_to_image_server/`: Poem HTTP server – see `html_to_image_server/README.md`.
+- `html_to_image_node/`: Node.js N-API addon used by `@grouvie/html-to-image` – see `html_to_image_node/README.md`.
 - `templates/`: sample `card.html`; `assets/fonts/` contains bundled fonts.
 
 ## Quick start
@@ -63,17 +64,54 @@ curl -X POST http://127.0.0.1:3000/render/png \
 
 See `html_to_image_server/README.md` for full API details and Swagger UI.
 
+### Node.js / TypeScript (N-API addon)
+
+```bash
+# Build the addon at repo root (runs via npm prepare)
+npm install
+
+# Run the local example
+cd examples/ts-local
+npm install
+npm run start
+```
+
+```ts
+import { renderTemplateToPng } from "@grouvie/html-to-image";
+
+await renderTemplateToPng({
+  templatePath: "/abs/path/to/templates/card.html",
+  outPath: "/abs/path/to/out/card.png",
+  width: 420,
+  height: 155,
+  data: {
+    user: "TypeScript",
+    message: "Rendered via Rust N-API",
+    icon: "*",
+    width: 420,
+    height: 155,
+  },
+  scale: 1.0,
+  animationTime: 5.0,
+  fontPaths: ["/abs/path/to/assets/fonts/FiraSans-Regular.ttf"],
+});
+```
+
+If your template uses custom fonts or emoji, pass those font files via `fontPaths` and ensure your CSS selects them. See `html_to_image_node/README.md` for details and GitHub install notes.
+
 ## Features
 
 - CPU-only HTML → PNG (no headless browser).
 - MiniJinja templating with HTML auto-escaping.
 - Optional custom fonts and render tuning (scale, animation time).
+- Node.js N-API addon with generated TypeScript types and bundled templates/fonts.
 
 ## Development
 
 - Lint: `cargo clippy --workspace`
 - Tests: `cargo test --workspace`
 - Format: `cargo fmt --all`
+- Node addon build: `npm run build`
 
 ## License
 
